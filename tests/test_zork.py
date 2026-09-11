@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from meshzork_plugin.zork import ZorkStore, paginate_text
+from meshzork_plugin.zork import FrotzRunner, ZorkStore, paginate_text
 
 
 class FakeRunner:
@@ -70,3 +70,21 @@ def test_paginate_text_is_utf8_safe() -> None:
     pages = paginate_text("cafe \N{GRINNING FACE} " * 80, 75)
     assert len(pages) > 1
     assert all(len(page.encode("utf-8")) <= 75 for page in pages)
+
+
+def test_frotz_status_line_is_removed() -> None:
+    output = FrotzRunner._clean(
+        "West of House                      Score: 0 Moves: 3\r\n"
+        "West of House\r\nThere is a mailbox here.\r\n"
+    )
+    assert output == "West of House\nThere is a mailbox here."
+
+
+def test_pending_pages_can_be_reserved_and_requeued(tmp_path) -> None:
+    game = ZorkStore(tmp_path / "sessions.sqlite3", FakeRunner(), max_reply_bytes=70)
+    game.handle("alice", "look", timestamp=1)
+    pages = game.take_pending_pages("alice", 2)
+    assert len(pages) == 2
+
+    game.requeue_pending_pages("alice", pages)
+    assert game.handle("alice", "next", timestamp=2) == pages[0]

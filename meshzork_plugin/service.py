@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import re
 import signal
 from importlib.resources import files
 from pathlib import Path
@@ -16,6 +17,7 @@ from .meshcore_client import IncomingMessage, MeshCoreClient
 from .zork import FrotzRunner, ZorkStore
 
 logger = logging.getLogger(__name__)
+_NUMBERED_PAGE = re.compile(r"^\d+/\d+\s")
 
 
 class GameHandler(Protocol):
@@ -63,10 +65,31 @@ class MeshZorkService:
             timestamp=message.timestamp,
         )
         if response is not None:
-            await self.meshcore.send_text(
+            sent = await self.meshcore.send_text(
                 message.sender_prefix,
                 fit_utf8(response, self.settings.max_reply_bytes),
             )
+            if sent and _NUMBERED_PAGE.match(response):
+                await self._send_followup_pages(message.sender_prefix, sender_id)
+
+    async def _send_followup_pages(self, recipient: bytes, sender_id: str) -> None:
+        take_pages = getattr(self.game, "take_pending_pages", None)
+        requeue_pages = getattr(self.game, "requeue_pending_pages", None)
+        if not callable(take_pages):
+            return
+        pages = await asyncio.to_thread(
+            take_pages,
+            sender_id,
+            self.settings.auto_page_limit - 1,
+        )
+        for index, page in enumerate(pages):
+            await asyncio.sleep(self.settings.page_delay_seconds)
+            if await self.meshcore.send_text(recipient, page):
+                continue
+            logger.warning("Could not send follow-up page to sender=%s", sender_id)
+            if callable(requeue_pages):
+                await asyncio.to_thread(requeue_pages, sender_id, pages[index:])
+            break
 
     def _register_signals(self) -> None:
         loop = asyncio.get_running_loop()

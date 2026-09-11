@@ -21,6 +21,8 @@ class Settings:
     max_reply_bytes: int
     max_command_bytes: int
     duplicate_ttl_seconds: int
+    auto_page_limit: int
+    page_delay_seconds: float
     frotz_path: str
     story_path: Path | None
     random_seed: int
@@ -38,6 +40,8 @@ class Settings:
             max_reply_bytes=_get_int("MAX_REPLY_BYTES", 145, config),
             max_command_bytes=_get_int("MAX_COMMAND_BYTES", 160, config),
             duplicate_ttl_seconds=_get_int("DUPLICATE_TTL_SECONDS", 600, config),
+            auto_page_limit=_get_int("AUTO_PAGE_LIMIT", 4, config),
+            page_delay_seconds=_get_float("PAGE_DELAY_SECONDS", 2.0, config),
             frotz_path=_get_str("FROTZ_PATH", "/usr/games/dfrotz", config),
             story_path=_get_optional_path("STORY_PATH", config),
             random_seed=_get_int("RANDOM_SEED", 117, config),
@@ -86,6 +90,16 @@ def _get_int(name: str, default: int, config: dict[str, Any]) -> int:
         raise ConfigError(f"{name} must be an integer") from exc
 
 
+def _get_float(name: str, default: float, config: dict[str, Any]) -> float:
+    value = _raw(name, default, config)
+    if isinstance(value, bool):
+        raise ConfigError(f"{name} must be a number")
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{name} must be a number") from exc
+
+
 def _get_optional_path(name: str, config: dict[str, Any]) -> Path | None:
     value = _raw(name, "", config)
     if not isinstance(value, str):
@@ -104,6 +118,10 @@ def _validate(settings: Settings) -> None:
         raise ConfigError("MAX_COMMAND_BYTES must be between 1 and 1024")
     if settings.duplicate_ttl_seconds < 60:
         raise ConfigError("DUPLICATE_TTL_SECONDS must be at least 60")
+    if not 1 <= settings.auto_page_limit <= 10:
+        raise ConfigError("AUTO_PAGE_LIMIT must be between 1 and 10")
+    if not 0.5 <= settings.page_delay_seconds <= 10:
+        raise ConfigError("PAGE_DELAY_SECONDS must be between 0.5 and 10")
     if not settings.frotz_path:
         raise ConfigError("FROTZ_PATH must not be empty")
     if not 1 <= settings.random_seed <= 32767:

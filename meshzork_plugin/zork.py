@@ -29,6 +29,7 @@ class FrotzRunner:
 
     _PROMPT = re.compile(r"(?m)^(?:>|\)|T|t|D|}) ?(?=\r?$)")
     _ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+    _STATUS_LINE = re.compile(r"\bScore:\s*-?\d+\s+Moves:\s*\d+\b", re.IGNORECASE)
 
     def __init__(
         self,
@@ -90,7 +91,11 @@ class FrotzRunner:
     @classmethod
     def _clean(cls, text: str) -> str:
         text = cls._ANSI.sub("", text).replace("\r", "")
-        lines = [line.rstrip() for line in text.splitlines()]
+        lines = [
+            line.rstrip()
+            for line in text.splitlines()
+            if not cls._STATUS_LINE.search(line)
+        ]
         while lines and not lines[0].strip():
             lines.pop(0)
         while lines and not lines[-1].strip():
@@ -168,8 +173,8 @@ class ZorkStore:
                 return self._next_page(connection, sender_id, history, pending, now)
             if lower in {"help", "?"}:
                 return fit_utf8(
-                    "Send one Zork command per DM. NEXT continues long replies; RESET starts over. "
-                    "SAVE/RESTORE are automatic.",
+                    "Send one Zork command per DM. Replies continue automatically; NEXT retrieves "
+                    "any remaining text. RESET starts over. SAVE is automatic.",
                     self.max_reply_bytes,
                 )
             if lower in {"save", "restore"}:
@@ -240,6 +245,46 @@ class ZorkStore:
             (json.dumps(history), json.dumps(pending), now, sender_id),
         )
         return page
+
+    def take_pending_pages(self, sender_id: str, limit: int) -> list[str]:
+        """Atomically reserve pending pages for automatic radio delivery."""
+        if limit <= 0:
+            return []
+        now = int(time.time())
+        with self._lock, self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT pending_json FROM zork_sessions WHERE sender_id=?",
+                (sender_id,),
+            ).fetchone()
+            if row is None:
+                return []
+            pending = json.loads(row["pending_json"])
+            selected = pending[:limit]
+            connection.execute(
+                "UPDATE zork_sessions SET pending_json=?, updated_at=? WHERE sender_id=?",
+                (json.dumps(pending[limit:]), now, sender_id),
+            )
+            return selected
+
+    def requeue_pending_pages(self, sender_id: str, pages: list[str]) -> None:
+        """Put unsent automatic pages back so the player can request NEXT."""
+        if not pages:
+            return
+        now = int(time.time())
+        with self._lock, self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT pending_json FROM zork_sessions WHERE sender_id=?",
+                (sender_id,),
+            ).fetchone()
+            if row is None:
+                return
+            pending = json.loads(row["pending_json"])
+            connection.execute(
+                "UPDATE zork_sessions SET pending_json=?, updated_at=? WHERE sender_id=?",
+                (json.dumps([*pages, *pending]), now, sender_id),
+            )
 
 
 def paginate_text(text: str, max_bytes: int) -> list[str]:

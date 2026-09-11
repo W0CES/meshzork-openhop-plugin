@@ -177,9 +177,10 @@ in shared channels.
   a fixed random seed, making recovery independent of an in-memory process.
 - Duplicate safety: sender + radio timestamp + normalized-command digest is
   retained for a configurable TTL so a radio retry cannot move twice.
-- Airtime: one response packet per incoming DM. Long story output is stored as
-  UTF-8-safe numbered pages of at most `max_reply_bytes` (145 by default), and
-  the player retrieves subsequent pages with `NEXT`.
+- Airtime: long story output is stored as UTF-8-safe numbered pages of at most
+  `max_reply_bytes` (145 by default). Up to four pages are sent automatically
+  with an inter-packet delay; `NEXT` retrieves only unusually long remaining output.
+  The Frotz score/move status bar is removed from routine replies.
 - Privacy in logs: sender prefix and a command digest are logged, not command
   text.
 - Fault containment: no repeater imports, separate venv/process group, bounded

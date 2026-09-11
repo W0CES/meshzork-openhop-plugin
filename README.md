@@ -5,7 +5,8 @@ Created for and credited to **MacKayz117**.
 MeshZork lets players run the complete historical Zork I game by direct-messaging
 a dedicated MeshCore Companion identity on an openHop Repeater. Each sender gets
 an independent SQLite-backed game session. Long descriptions are divided into
-LoRa-friendly packets that players retrieve with `NEXT`.
+LoRa-friendly numbered packets. Short multi-part replies continue automatically;
+players use `NEXT` only when unusually long output remains.
 
 The bundled version 3 Z-machine program comes from Microsoft's
 [Historical Source repository for Zork I](https://github.com/historicalsource/zork1)
@@ -22,14 +23,16 @@ product. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
   state with a fixed random seed after plugin or repeater restarts;
 - persists sessions across plugin and repeater restarts;
 - ignores duplicate radio deliveries using sender, timestamp, and command hash;
-- divides long output into numbered UTF-8 responses of at most 145 bytes;
+- divides long output into numbered UTF-8 responses of at most 145 bytes and
+  automatically sends up to four pages with a radio-friendly pause;
+- suppresses the repetitive score/move status bar to save airtime (`SCORE` still works);
 - reconnects automatically if the Companion server is temporarily unavailable;
 - runs as a child of `openhop-plugin-manager`, outside the repeater process.
 
-All normal Zork I commands are supported. `NEXT` (or `MORE`) retrieves the next
-radio packet, `RESET` starts a fresh game, and `HELP` explains the radio wrapper.
-Saving and restoring are automatic, so the game's interactive `SAVE` and
-`RESTORE` prompts are replaced with a short explanation.
+All normal Zork I commands are supported. `NEXT` (or `MORE`) retrieves any page
+remaining after automatic delivery, `RESET` starts a fresh game, and `HELP`
+explains the radio wrapper. Saving and restoring are automatic, so the game's
+interactive `SAVE` and `RESTORE` prompts are replaced with a short explanation.
 
 ## Requirements
 
@@ -56,7 +59,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.0-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.1-py3-none-any.whl`.
 
 ## Raspberry Pi installation
 
@@ -136,7 +139,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.0-py3-none-any.whl
+openhop_meshzork_plugin-0.2.1-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -148,6 +151,8 @@ The manager installs it disabled. Open the MeshZork plugin settings and confirm:
   "max_reply_bytes": 145,
   "max_command_bytes": 160,
   "duplicate_ttl_seconds": 600,
+  "auto_page_limit": 4,
+  "page_delay_seconds": 2.0,
   "frotz_path": "/usr/games/dfrotz",
   "story_path": "",
   "random_seed": 117,
@@ -162,7 +167,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.0-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.1-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -177,8 +182,8 @@ Treat the bearer token as an administrator credential.
 
 1. Add the advertised `MeshZork` Companion as a contact in your MeshCore client.
 2. Send it a direct message: `LOOK`.
-3. Expect the Zork I `West of House` response. If it ends in `NEXT`, keep sending
-   `NEXT` until the numbered response is complete.
+3. Expect the Zork I `West of House` response. Numbered follow-up packets arrive
+   automatically. Send `NEXT` only if the last received packet still says `NEXT`.
 4. Send `OPEN MAILBOX`, then `READ LEAFLET`; expect the familiar game responses.
 5. Restart the plugin and send `LOOK` again; the player's location and inventory
    should be preserved.

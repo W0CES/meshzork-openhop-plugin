@@ -17,6 +17,14 @@ class FakeMeshCore:
         return True
 
 
+class FakePagedGame:
+    def handle(self, sender_id: str, command: str, *, timestamp: int | None = None) -> str:
+        return "1/2 First half NEXT"
+
+    def take_pending_pages(self, sender_id: str, limit: int) -> list[str]:
+        return ["2/2 Second half"][:limit]
+
+
 def settings(tmp_path: Path) -> Settings:
     return Settings(
         meshcore_host="127.0.0.1",
@@ -25,6 +33,8 @@ def settings(tmp_path: Path) -> Settings:
         max_reply_bytes=80,
         max_command_bytes=160,
         duplicate_ttl_seconds=600,
+        auto_page_limit=4,
+        page_delay_seconds=0.5,
         frotz_path="/usr/games/dfrotz",
         story_path=None,
         random_seed=117,
@@ -51,3 +61,16 @@ async def test_non_plain_message_is_ignored(tmp_path) -> None:
     service = MeshZorkService(settings(tmp_path), mesh, GameStore(tmp_path / "sessions.sqlite3"))
     await service.handle_message(IncomingMessage(b"ABCDEF", "look", 1, 1, 0, None))
     assert mesh.sent == []
+
+
+@pytest.mark.asyncio
+async def test_numbered_followup_pages_are_sent_automatically(tmp_path) -> None:
+    mesh = FakeMeshCore()
+    service = MeshZorkService(settings(tmp_path), mesh, FakePagedGame())
+
+    await service.handle_message(IncomingMessage(b"ABCDEF", "look", 123, 0, 1, 4.5))
+
+    assert mesh.sent == [
+        (b"ABCDEF", "1/2 First half NEXT"),
+        (b"ABCDEF", "2/2 Second half"),
+    ]
