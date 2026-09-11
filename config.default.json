@@ -1,0 +1,8 @@
+{
+  "meshcore_host": "127.0.0.1",
+  "meshcore_port": 5002,
+  "max_reply_bytes": 145,
+  "max_command_bytes": 160,
+  "duplicate_ttl_seconds": 600,
+  "log_level": "INFO"
+}

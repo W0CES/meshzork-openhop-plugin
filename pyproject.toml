@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openhop-meshzork-plugin"
+version = "0.1.1"
+description = "Native openHop service plugin for a MeshCore-accessible interactive-fiction game"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "MacKayz117" }
+]
+dependencies = [
+  "openhop-core==1.1.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2.1",
+  "pytest>=8.2.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.6.0",
+  "tomli>=2.0.1; python_version < '3.11'"
+]
+
+[project.scripts]
+meshzork-openhop = "meshzork_plugin.service:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["meshzork_plugin*"]
+
+[tool.setuptools.data-files]
+"share/openhop/plugins/openhop.meshzork" = ["openhop-plugin.json", "config.default.json"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
