@@ -2,27 +2,34 @@
 
 Created for and credited to **MacKayz117**.
 
-MeshZork is a minimal, original interactive-fiction proof of concept for an
-openHop Repeater. Players direct-message a dedicated MeshCore Companion
-identity. Each sender gets an independent SQLite-backed game session, and every
-reply is limited to one LoRa-friendly text packet.
+MeshZork lets players run the complete historical Zork I game by direct-messaging
+a dedicated MeshCore Companion identity on an openHop Repeater. Each sender gets
+an independent SQLite-backed game session. Long descriptions are divided into
+LoRa-friendly packets that players retrieve with `NEXT`.
 
-This project contains no Zork story text, data files, or Infocom code. It is a
-small original game in the command-driven adventure tradition.
+The bundled version 3 Z-machine program comes from Microsoft's
+[Historical Source repository for Zork I](https://github.com/historicalsource/zork1)
+and is distributed there under the MIT License. Zork is a trademark of its
+respective owner; this community plugin is not an official Microsoft or Infocom
+product. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## What this proof of concept does
+## What the plugin does
 
 - receives plain-text direct messages through an openHop Companion TCP server;
 - identifies a player by the six-byte MeshCore sender prefix;
-- saves room, inventory, move count, and victory state in SQLite;
+- runs the complete Zork I story through the established Dumb Frotz interpreter;
+- saves each player's command history in SQLite and reconstructs the exact game
+  state with a fixed random seed after plugin or repeater restarts;
 - persists sessions across plugin and repeater restarts;
 - ignores duplicate radio deliveries using sender, timestamp, and command hash;
-- sends one UTF-8 response of at most 145 bytes by default;
+- divides long output into numbered UTF-8 responses of at most 145 bytes;
 - reconnects automatically if the Companion server is temporarily unavailable;
 - runs as a child of `openhop-plugin-manager`, outside the repeater process.
 
-The tiny test world understands `LOOK`, `N`, `S`, `E`, `W`, `TAKE KEY`,
-`INVENTORY`, `SCORE`, `HELP`, and `RESET`.
+All normal Zork I commands are supported. `NEXT` (or `MORE`) retrieves the next
+radio packet, `RESET` starts a fresh game, and `HELP` explains the radio wrapper.
+Saving and restoring are automatic, so the game's interactive `SAVE` and
+`RESTORE` prompts are replaced with a short explanation.
 
 ## Requirements
 
@@ -30,6 +37,7 @@ The tiny test world understands `LOOK`, `N`, `S`, `E`, `W`, `TAKE KEY`,
 - the separate `openhop-plugin-manager` service running;
 - one dedicated Companion identity with a free local TCP port (the examples use
   `5002`);
+- Dumb Frotz (`dfrotz`), supplied by Raspberry Pi OS's `frotz` package;
 - internet access during first installation so the isolated plugin environment
   can install `openhop-core==1.1.1`.
 
@@ -48,7 +56,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.1.1-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.0-py3-none-any.whl`.
 
 ## Raspberry Pi installation
 
@@ -111,13 +119,24 @@ identities:
 If you edit YAML directly, restart `openhop-repeater` and verify port 5002 is
 listening before continuing.
 
-### 3. Install the wheel
+### 3. Install Dumb Frotz
+
+```bash
+sudo apt update
+sudo apt install -y frotz
+test -x /usr/games/dfrotz
+```
+
+Frotz remains a separate system executable. The plugin starts it with a fixed
+random seed and restricts story-initiated file access to a per-player directory.
+
+### 4. Install the wheel
 
 Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, and
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.1.1-py3-none-any.whl
+openhop_meshzork_plugin-0.2.0-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -129,6 +148,9 @@ The manager installs it disabled. Open the MeshZork plugin settings and confirm:
   "max_reply_bytes": 145,
   "max_command_bytes": 160,
   "duplicate_ttl_seconds": 600,
+  "frotz_path": "/usr/games/dfrotz",
+  "story_path": "",
+  "random_seed": 117,
   "log_level": "INFO"
 }
 ```
@@ -140,7 +162,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.1.1-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.0-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -155,13 +177,13 @@ Treat the bearer token as an administrator credential.
 
 1. Add the advertised `MeshZork` Companion as a contact in your MeshCore client.
 2. Send it a direct message: `LOOK`.
-3. Expect a short reply beginning `Faded Trail:`.
-4. Send `E`, `TAKE KEY`, `W`, `N`, `N` to reach the victory room.
-5. Send `SCORE`; expect `Score 10/10`.
-6. From a second MeshCore identity, send `INVENTORY`; it should report an empty
-   inventory, proving sessions are separated.
-7. Restart the plugin and send `SCORE` again from the first identity; the saved
-   state should remain.
+3. Expect the Zork I `West of House` response. If it ends in `NEXT`, keep sending
+   `NEXT` until the numbered response is complete.
+4. Send `OPEN MAILBOX`, then `READ LEAFLET`; expect the familiar game responses.
+5. Restart the plugin and send `LOOK` again; the player's location and inventory
+   should be preserved.
+6. From a second MeshCore identity, send `LOOK`; it should start independently
+   at West of House.
 
 Useful checks on the Pi:
 

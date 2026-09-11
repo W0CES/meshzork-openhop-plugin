@@ -21,6 +21,9 @@ class Settings:
     max_reply_bytes: int
     max_command_bytes: int
     duplicate_ttl_seconds: int
+    frotz_path: str
+    story_path: Path | None
+    random_seed: int
     log_level: str
 
     @classmethod
@@ -35,6 +38,9 @@ class Settings:
             max_reply_bytes=_get_int("MAX_REPLY_BYTES", 145, config),
             max_command_bytes=_get_int("MAX_COMMAND_BYTES", 160, config),
             duplicate_ttl_seconds=_get_int("DUPLICATE_TTL_SECONDS", 600, config),
+            frotz_path=_get_str("FROTZ_PATH", "/usr/games/dfrotz", config),
+            story_path=_get_optional_path("STORY_PATH", config),
+            random_seed=_get_int("RANDOM_SEED", 117, config),
             log_level=_get_str("LOG_LEVEL", "INFO", config).upper(),
         )
         _validate(settings)
@@ -80,6 +86,13 @@ def _get_int(name: str, default: int, config: dict[str, Any]) -> int:
         raise ConfigError(f"{name} must be an integer") from exc
 
 
+def _get_optional_path(name: str, config: dict[str, Any]) -> Path | None:
+    value = _raw(name, "", config)
+    if not isinstance(value, str):
+        raise ConfigError(f"{name} must be a string")
+    return Path(value).expanduser() if value.strip() else None
+
+
 def _validate(settings: Settings) -> None:
     if not settings.meshcore_host:
         raise ConfigError("MESHCORE_HOST must not be empty")
@@ -91,3 +104,7 @@ def _validate(settings: Settings) -> None:
         raise ConfigError("MAX_COMMAND_BYTES must be between 1 and 1024")
     if settings.duplicate_ttl_seconds < 60:
         raise ConfigError("DUPLICATE_TTL_SECONDS must be at least 60")
+    if not settings.frotz_path:
+        raise ConfigError("FROTZ_PATH must not be empty")
+    if not 1 <= settings.random_seed <= 32767:
+        raise ConfigError("RANDOM_SEED must be between 1 and 32767")

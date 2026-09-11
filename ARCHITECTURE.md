@@ -31,7 +31,8 @@ MeshCore radio packet
   -> openhop-repeater
   -> dedicated Companion identity / TCP frame server (127.0.0.1:5002)
   -> MeshZork process
-  -> SQLite session transaction
+  -> SQLite command-history transaction
+  -> isolated dfrotz Z-machine replay
   -> Companion SEND_TXT_MSG
   -> openhop-repeater transmit path
 
@@ -171,17 +172,22 @@ in shared channels.
 ## MeshZork design decisions
 
 - Per-user key: six-byte sender prefix encoded as hex.
-- Persistence: SQLite in `$OPENHOP_PLUGIN_DATA/sessions.sqlite3`; WAL mode and an
-  immediate transaction make each command/state update atomic.
+- Persistence: SQLite in `$OPENHOP_PLUGIN_DATA/sessions.sqlite3`; each sender has
+  an independent command history. The history is replayed through `dfrotz` with
+  a fixed random seed, making recovery independent of an in-memory process.
 - Duplicate safety: sender + radio timestamp + normalized-command digest is
   retained for a configurable TTL so a radio retry cannot move twice.
-- Airtime: exactly one response packet, UTF-8 clipped to `max_reply_bytes` (145
-  by default).
+- Airtime: one response packet per incoming DM. Long story output is stored as
+  UTF-8-safe numbered pages of at most `max_reply_bytes` (145 by default), and
+  the player retrieves subsequent pages with `NEXT`.
 - Privacy in logs: sender prefix and a command digest are logged, not command
   text.
 - Fault containment: no repeater imports, separate venv/process group, bounded
   work, graceful SIGTERM, automatic Companion reconnect.
 
-This proof of concept is deliberately small. A later full game engine can keep
-the same transport and `GameStore` boundary while replacing the original test
-world with a parser or a legally distributable IF engine/story package.
+Version 0.2.0 replaces the original test world with the complete MIT-licensed
+historical Zork I Z-machine program. The plugin invokes the separately installed
+`dfrotz` executable with `shell=False`, disables MORE prompts, uses plain ASCII,
+and restricts story file access to a per-player data directory. Interpreter
+failures remain inside the plugin manager's supervised process boundary and do
+not interrupt the repeater.

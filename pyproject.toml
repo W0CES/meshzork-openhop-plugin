@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openhop-meshzork-plugin"
-version = "0.1.1"
-description = "Native openHop service plugin for a MeshCore-accessible interactive-fiction game"
+version = "0.2.0"
+description = "Native openHop service plugin for playing Zork I over MeshCore direct messages"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -13,7 +13,8 @@ authors = [
   { name = "MacKayz117" }
 ]
 dependencies = [
-  "openhop-core==1.1.1"
+  "openhop-core==1.1.1",
+  "pexpect>=4.9,<5"
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,9 @@ meshzork-openhop = "meshzork_plugin.service:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["meshzork_plugin*"]
+
+[tool.setuptools.package-data]
+meshzork_plugin = ["assets/zork1.z3"]
 
 [tool.setuptools.data-files]
 "share/openhop/plugins/openhop.meshzork" = ["openhop-plugin.json", "config.default.json"]

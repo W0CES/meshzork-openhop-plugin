@@ -6,16 +6,24 @@ import asyncio
 import hashlib
 import logging
 import signal
+from importlib.resources import files
+from pathlib import Path
+from typing import Protocol
 
 from .config import ConfigError, Settings
-from .game import GameStore, fit_utf8
+from .game import fit_utf8
 from .meshcore_client import IncomingMessage, MeshCoreClient
+from .zork import FrotzRunner, ZorkStore
 
 logger = logging.getLogger(__name__)
 
 
+class GameHandler(Protocol):
+    def handle(self, sender_id: str, command: str, *, timestamp: int | None = None) -> str | None: ...
+
+
 class MeshZorkService:
-    def __init__(self, settings: Settings, meshcore: MeshCoreClient, game: GameStore) -> None:
+    def __init__(self, settings: Settings, meshcore: MeshCoreClient, game: GameHandler) -> None:
         self.settings = settings
         self.meshcore = meshcore
         self.game = game
@@ -76,8 +84,19 @@ async def _async_main() -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     meshcore = MeshCoreClient(host=settings.meshcore_host, port=settings.meshcore_port)
-    game = GameStore(
+    story_path = settings.story_path or Path(
+        str(files("meshzork_plugin").joinpath("assets/zork1.z3"))
+    )
+    runner = FrotzRunner(
+        settings.frotz_path,
+        story_path,
+        settings.database_path.parent / "zork-files",
+        seed=settings.random_seed,
+    )
+    game = ZorkStore(
         settings.database_path,
+        runner,
+        max_reply_bytes=settings.max_reply_bytes,
         duplicate_ttl_seconds=settings.duplicate_ttl_seconds,
     )
     await MeshZorkService(settings, meshcore, game).run()

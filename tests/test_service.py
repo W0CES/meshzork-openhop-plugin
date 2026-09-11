@@ -25,6 +25,9 @@ def settings(tmp_path: Path) -> Settings:
         max_reply_bytes=80,
         max_command_bytes=160,
         duplicate_ttl_seconds=600,
+        frotz_path="/usr/games/dfrotz",
+        story_path=None,
+        random_seed=117,
         log_level="INFO",
     )
 

@@ -7,3 +7,20 @@ from the `openhop-core` package at runtime.
 
 - Source: <https://github.com/openhop-dev/openhop-nomad-plugin>
 - License: <https://github.com/openhop-dev/openhop-nomad-plugin/blob/main/LICENSE>
+
+`meshzork_plugin/assets/zork1.z3` is the compiled Z-machine program published as
+`zork1.zip` in Microsoft's Historical Source repository for Zork I. That
+repository is distributed under the MIT License, Copyright (c) 2025 Microsoft.
+The filename uses the modern `.z3` extension to make clear that it is a version
+3 Z-machine program, not a PKZIP archive.
+
+- Source: <https://github.com/historicalsource/zork1>
+- Source revision: `97b7b3d68c075dd9af7da499c3e9690ada3471fd`
+- License: <https://github.com/historicalsource/zork1/blob/master/LICENSE>
+
+MeshZork runs the story through Dumb Frotz (`dfrotz`), which is installed
+separately from the Raspberry Pi OS package repositories and is licensed under
+GPL-2.0-or-later. MeshZork does not bundle or modify the Frotz executable.
+
+- Source: <https://gitlab.com/DavidGriffith/frotz>
+- Manual: <https://man.archlinux.org/man/dfrotz.6.en>

@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.build-venv/
 venv/
 build/
 dist/
@@ -11,4 +12,3 @@ dist/
 *.sqlite3-shm
 *.sqlite3-wal
 *.log
-

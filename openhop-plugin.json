@@ -2,8 +2,8 @@
   "schema": 1,
   "id": "openhop.meshzork",
   "name": "MeshZork",
-  "version": "0.1.1",
-  "description": "A small multi-player interactive-fiction game reached by MeshCore direct messages.",
+  "version": "0.2.0",
+  "description": "Play the MIT-licensed historical Zork I release through MeshCore direct messages.",
   "runtime": {
     "type": "python",
     "entrypoint": "meshzork-openhop"
@@ -15,6 +15,9 @@
       "max_reply_bytes": 145,
       "max_command_bytes": 160,
       "duplicate_ttl_seconds": 600,
+      "frotz_path": "/usr/games/dfrotz",
+      "story_path": "",
+      "random_seed": 117,
       "log_level": "INFO"
     }
   }
