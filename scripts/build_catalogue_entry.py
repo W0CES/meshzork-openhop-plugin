@@ -6,13 +6,8 @@ import argparse
 import hashlib
 import json
 import re
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.10 development environments
-    import tomli as tomllib
-
 
 ROOT = Path(__file__).resolve().parents[1]
 HEX_REVISION = re.compile(r"[0-9a-f]{7,64}")

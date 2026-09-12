@@ -14,7 +14,7 @@ from typing import Protocol
 from .config import ConfigError, Settings
 from .game import fit_utf8
 from .meshcore_client import IncomingMessage, MeshCoreClient
-from .zork import FrotzRunner, ZorkStore
+from .zork import YazmRunner, ZorkStore
 
 logger = logging.getLogger(__name__)
 _NUMBERED_PAGE = re.compile(r"^\d+/\d+\s")
@@ -110,8 +110,7 @@ async def _async_main() -> int:
     story_path = settings.story_path or Path(
         str(files("meshzork_plugin").joinpath("assets/zork1.z3"))
     )
-    runner = FrotzRunner(
-        settings.frotz_path,
+    runner = YazmRunner(
         story_path,
         settings.database_path.parent / "zork-files",
         seed=settings.random_seed,

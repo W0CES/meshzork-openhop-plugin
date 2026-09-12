@@ -88,7 +88,7 @@ class MeshCoreClient:
             logger.info("Reconnecting to MeshCore in %ss", delay)
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=delay)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
     async def send_text(self, recipient_prefix: bytes, text: str) -> bool:
@@ -113,7 +113,7 @@ class MeshCoreClient:
                 if frame[0] == RESP_CODE_ERR:
                     logger.warning("MeshCore rejected outgoing DM")
                     return False
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if attempt == 2:
                     return False
                 await asyncio.sleep(2**attempt)
@@ -136,7 +136,7 @@ class MeshCoreClient:
             while not stop_event.is_set() and not self._stop_requested.is_set():
                 try:
                     await asyncio.wait_for(self._message_waiting.wait(), timeout=2)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     self._message_waiting.set()
                 self._message_waiting.clear()
                 await self._drain_messages(on_message)

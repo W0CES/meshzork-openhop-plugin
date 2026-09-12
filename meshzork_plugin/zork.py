@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import sqlite3
+import sys
 import threading
 import time
 from pathlib import Path
@@ -24,23 +25,21 @@ class StoryRunner(Protocol):
     def run(self, commands: list[str], sender_id: str) -> str: ...
 
 
-class FrotzRunner:
-    """Run a deterministic, filesystem-restricted dfrotz replay for one turn."""
+class YazmRunner:
+    """Run a deterministic yazm replay in a bounded child process for one turn."""
 
-    _PROMPT = re.compile(r"(?m)^(?:>|\)|T|t|D|}) ?(?=\r?$)")
+    _PROMPT = re.compile(r"(?m)^> ?(?=\r?$)")
     _ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
     _STATUS_LINE = re.compile(r"\bScore:\s*-?\d+\s+Moves:\s*\d+\b", re.IGNORECASE)
 
     def __init__(
         self,
-        executable: str,
         story_path: Path,
         session_root: Path,
         *,
         seed: int = 117,
         timeout_seconds: int = 15,
     ) -> None:
-        self.executable = executable
         self.story_path = story_path
         self.session_root = session_root
         self.seed = seed
@@ -50,21 +49,18 @@ class FrotzRunner:
         session_dir = self.session_root / sender_id
         session_dir.mkdir(parents=True, exist_ok=True)
         args = [
-            "-q",
             "-m",
-            "-p",
-            "-s",
+            "meshzork_plugin.yazm_cli",
+            "--seed",
             str(self.seed),
-            "-w",
-            "120",
-            "-R",
+            "--session-dir",
             str(session_dir),
             str(self.story_path),
         ]
         child: pexpect.spawn | None = None
         try:
             child = pexpect.spawn(
-                self.executable,
+                sys.executable,
                 args=args,
                 encoding="utf-8",
                 codec_errors="replace",
@@ -76,7 +72,7 @@ class FrotzRunner:
                 child.sendline(command)
                 output = self._read_turn(child)
         except (OSError, pexpect.ExceptionPexpect) as exc:
-            raise ZorkEngineError(f"dfrotz failed: {exc}") from exc
+            raise ZorkEngineError(f"Z-machine interpreter failed: {exc}") from exc
         finally:
             if child is not None and child.isalive():
                 child.close(force=True)
@@ -85,7 +81,7 @@ class FrotzRunner:
     def _read_turn(self, child: pexpect.spawn) -> str:
         index = child.expect([self._PROMPT, pexpect.EOF, pexpect.TIMEOUT])
         if index == 2:
-            raise ZorkEngineError("dfrotz timed out waiting for the next prompt")
+            raise ZorkEngineError("Z-machine interpreter timed out waiting for the next prompt")
         return child.before or ""
 
     @classmethod

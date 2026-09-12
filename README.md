@@ -20,7 +20,7 @@ product. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 - receives plain-text direct messages through an openHop Companion TCP server;
 - identifies a player by the six-byte MeshCore sender prefix;
-- runs the complete Zork I story through the established Dumb Frotz interpreter;
+- runs the complete Zork I story through a bundled pure-Python interpreter dependency;
 - saves each player's command history in SQLite and reconstructs the exact game
   state with a fixed random seed after plugin or repeater restarts;
 - persists sessions across plugin and repeater restarts;
@@ -42,13 +42,18 @@ interactive `SAVE` and `RESTORE` prompts are replaced with a short explanation.
 
 ## Requirements
 
-- openHop Repeater 1.1.4 or newer with plugins enabled;
+- openHop Repeater 1.1.4 or newer with plugins enabled and Python 3.12+;
 - the separate `openhop-plugin-manager` service running;
 - one dedicated Companion identity with a free local TCP port (the examples use
   `5002`);
-- Dumb Frotz (`dfrotz`), supplied by Raspberry Pi OS's `frotz` package;
 - internet access during first installation so the isolated plugin environment
-  can install `openhop-core==1.1.1`.
+  can install its pinned Python dependencies.
+
+No system Z-machine package is required. MeshZork 0.3.0 uses the MIT-licensed,
+pure-Python `yazm-py==0.2.0` interpreter, so the same platform-independent wheel
+works in the published openHop Docker image and on current native Pi installs.
+Every push also builds the wheel in a clean Python 3.12 slim container and runs
+an actual Zork turn through the installed interpreter.
 
 The current plugin manager is not a security sandbox. It isolates the plugin's
 process and Python dependencies, but native plugins still run as the `repeater`
@@ -56,7 +61,7 @@ user. Install only wheels you trust.
 
 ## Build the wheel
 
-On any Python 3.10+ machine, from this directory:
+On any Python 3.12+ machine, from this directory:
 
 ```bash
 python3 -m venv .build-venv
@@ -65,7 +70,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.5-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.3.0-py3-none-any.whl`.
 
 ## Publish a catalogue-ready GitHub Release
 
@@ -78,14 +83,14 @@ Create a release by pushing a version tag that matches `pyproject.toml` and the
 plugin manifest:
 
 ```bash
-git tag v0.2.5
-git push origin v0.2.5
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-After the workflow succeeds, release `v0.2.5` contains:
+After the workflow succeeds, release `v0.3.0` contains:
 
-- `openhop_meshzork_plugin-0.2.5-py3-none-any.whl` — the installable plugin;
-- `openhop_meshzork_plugin-0.2.5-py3-none-any.whl.sha256` — its digest;
+- `openhop_meshzork_plugin-0.3.0-py3-none-any.whl` — the installable plugin;
+- `openhop_meshzork_plugin-0.3.0-py3-none-any.whl.sha256` — its digest;
 - `meshzork-card.png` — artwork sized for the openHop plugin card;
 - `catalogue-entry.json` — a complete schema-2 catalogue containing the exact
   release URLs, commit revision, plugin metadata, and checksum.
@@ -94,7 +99,7 @@ Send `catalogue-entry.json` and the release URL to the openHop catalogue
 maintainers. Publication does not approve the plugin automatically. Do not
 replace release files after approval; publish a new version for every update.
 
-## Raspberry Pi installation
+## Native Raspberry Pi and Docker installation
 
 ### 1. Update openHop and confirm the manager
 
@@ -120,6 +125,11 @@ Do not run the plugin manager as root. If the packaged unit is in a different
 location on your installation, use the `openhop-plugin-manager.service` from the
 matching openHop Repeater 1.1.4 source tree.
 
+For Docker, use the current `openhop/openhop-repeater:main` or `:dev` image and
+keep both `/etc/openhop_repeater` and `/var/lib/openhop_repeater` persistent.
+The image already supervises the Repeater and plugin manager; do not install or
+run systemd inside the container. Do not set `OPENHOP_PLUGIN_MANAGER=0`.
+
 ### 2. Create a dedicated Companion identity
 
 In the openHop dashboard, open **Identities**, add a **Companion**, and use:
@@ -133,6 +143,11 @@ In the openHop dashboard, open **Identities**, add a **Companion**, and use:
 Let openHop generate the identity key. A Companion allows one connected TCP
 client, so do not reuse an identity already occupied by another app. Confirm the
 Companion is active before enabling the plugin.
+
+In Docker, MeshZork is launched inside the same container as openHop, so
+`127.0.0.1:5002` is the correct address. The Companion port is internal and does
+not need to be exposed through Compose. MeshZork saves are already covered by
+the persistent `/var/lib/openhop_repeater` volume.
 
 Equivalent YAML shape, if you manage `/etc/openhop_repeater/config.yaml`
 directly, is:
@@ -155,24 +170,13 @@ identities:
 If you edit YAML directly, restart `openhop-repeater` and verify port 5002 is
 listening before continuing.
 
-### 3. Install Dumb Frotz
-
-```bash
-sudo apt update
-sudo apt install -y frotz
-test -x /usr/games/dfrotz
-```
-
-Frotz remains a separate system executable. The plugin starts it with a fixed
-random seed and restricts story-initiated file access to a per-player directory.
-
-### 4. Install the wheel
+### 3. Install the wheel
 
 Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, and
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.5-py3-none-any.whl
+openhop_meshzork_plugin-0.3.0-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -190,7 +194,6 @@ The manager installs it disabled. Open the MeshZork plugin settings and confirm:
   "active_player_timeout_seconds": 900,
   "busy_notice_ttl_seconds": 300,
   "save_retention_days": 30,
-  "frotz_path": "/usr/games/dfrotz",
   "story_path": "",
   "random_seed": 117,
   "log_level": "INFO"
@@ -209,7 +212,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.5-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.3.0-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \

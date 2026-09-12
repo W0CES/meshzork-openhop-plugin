@@ -39,7 +39,6 @@ def settings(tmp_path: Path) -> Settings:
         active_player_timeout_seconds=900,
         busy_notice_ttl_seconds=300,
         save_retention_days=30,
-        frotz_path="/usr/games/dfrotz",
         story_path=None,
         random_seed=117,
         log_level="INFO",

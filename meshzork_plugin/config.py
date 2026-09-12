@@ -27,7 +27,6 @@ class Settings:
     active_player_timeout_seconds: int
     busy_notice_ttl_seconds: int
     save_retention_days: int
-    frotz_path: str
     story_path: Path | None
     random_seed: int
     log_level: str
@@ -52,7 +51,6 @@ class Settings:
             ),
             busy_notice_ttl_seconds=_get_int("BUSY_NOTICE_TTL_SECONDS", 300, config),
             save_retention_days=_get_int("SAVE_RETENTION_DAYS", 30, config),
-            frotz_path=_get_str("FROTZ_PATH", "/usr/games/dfrotz", config),
             story_path=_get_optional_path("STORY_PATH", config),
             random_seed=_get_int("RANDOM_SEED", 117, config),
             log_level=_get_str("LOG_LEVEL", "INFO", config).upper(),
@@ -140,7 +138,5 @@ def _validate(settings: Settings) -> None:
         raise ConfigError("BUSY_NOTICE_TTL_SECONDS must be between 30 and 3600")
     if not 1 <= settings.save_retention_days <= 3650:
         raise ConfigError("SAVE_RETENTION_DAYS must be between 1 and 3650")
-    if not settings.frotz_path:
-        raise ConfigError("FROTZ_PATH must not be empty")
     if not 1 <= settings.random_seed <= 32767:
         raise ConfigError("RANDOM_SEED must be between 1 and 32767")

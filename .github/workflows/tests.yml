@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - name: Install test dependencies
         run: python -m pip install -e ".[dev]"
@@ -22,3 +22,10 @@ jobs:
         run: ruff check .
       - name: Test
         run: pytest
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run clean Python 3.12 container test
+        run: docker build --file tests/Dockerfile.smoke --tag meshzork-container-smoke .

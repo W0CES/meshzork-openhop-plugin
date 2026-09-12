@@ -23,9 +23,9 @@ author for MeshZork branding. It is included in the wheel and shown in the
 project README; it is not used as an openHop manifest field because schema 1 has
 no declared icon property.
 
-MeshZork runs the story through Dumb Frotz (`dfrotz`), which is installed
-separately from the Raspberry Pi OS package repositories and is licensed under
-GPL-2.0-or-later. MeshZork does not bundle or modify the Frotz executable.
+MeshZork runs the story through `yazm-py`, a pure-Python Z-machine version 3
+interpreter distributed under the MIT License. It is installed as the pinned
+Python dependency `yazm-py==0.2.0` in MeshZork's isolated plugin environment.
 
-- Source: <https://gitlab.com/DavidGriffith/frotz>
-- Manual: <https://man.archlinux.org/man/dfrotz.6.en>
+- Source: <https://github.com/swilcox/yazm-py>
+- License: <https://github.com/swilcox/yazm-py/blob/master/LICENSE>

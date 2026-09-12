@@ -32,7 +32,7 @@ MeshCore radio packet
   -> dedicated Companion identity / TCP frame server (127.0.0.1:5002)
   -> MeshZork process
   -> SQLite command-history transaction
-  -> isolated dfrotz Z-machine replay
+  -> isolated pure-Python yazm Z-machine replay
   -> Companion SEND_TXT_MSG
   -> openhop-repeater transmit path
 
@@ -177,7 +177,7 @@ in shared channels.
 
 - Per-user key: six-byte sender prefix encoded as hex.
 - Persistence: SQLite in `$OPENHOP_PLUGIN_DATA/sessions.sqlite3`; each sender has
-  an independent command history. The history is replayed through `dfrotz` with
+  an independent command history. The history is replayed through `yazm-py` with
   a fixed random seed, making recovery independent of an in-memory process.
 - Duplicate safety: sender + radio timestamp + normalized-command digest is
   retained for a configurable TTL so a radio retry cannot move twice.
@@ -188,15 +188,18 @@ in shared channels.
 - Airtime: long story output is stored as UTF-8-safe numbered pages of at most
   `max_reply_bytes` (145 by default). Up to four pages are sent automatically
   with an inter-packet delay; `NEXT` retrieves only unusually long remaining output.
-  The Frotz score/move status bar is removed from routine replies.
+  The interpreter score/move status bar is removed from routine replies.
 - Privacy in logs: sender prefix and a command digest are logged, not command
   text.
 - Fault containment: no repeater imports, separate venv/process group, bounded
   work, graceful SIGTERM, automatic Companion reconnect.
 
-Version 0.2.0 replaces the original test world with the complete MIT-licensed
-historical Zork I Z-machine program. The plugin invokes the separately installed
-`dfrotz` executable with `shell=False`, disables MORE prompts, uses plain ASCII,
-and restricts story file access to a per-player data directory. Interpreter
+Version 0.2.0 replaced the original test world with the complete MIT-licensed
+historical Zork I Z-machine program. Version 0.3.0 replaced the external
+`dfrotz` operating-system dependency with pinned, MIT-licensed `yazm-py`. The
+interpreter is launched from the plugin virtual environment in a bounded child
+process, uses plain output and a fixed random seed, and keeps story file access
+under a per-player data directory. The wheel is platform-independent and works
+with the Python 3.12 runtime in the published openHop Docker image. Interpreter
 failures remain inside the plugin manager's supervised process boundary and do
 not interrupt the repeater.
