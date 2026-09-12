@@ -18,6 +18,11 @@ The filename uses the modern `.z3` extension to make clear that it is a version
 - Source revision: `97b7b3d68c075dd9af7da499c3e9690ada3471fd`
 - License: <https://github.com/historicalsource/zork1/blob/master/LICENSE>
 
+`meshzork_plugin/assets/meshzork-openhop.png` is project artwork supplied by the
+author for MeshZork branding. It is included in the wheel and shown in the
+project README; it is not used as an openHop manifest field because schema 1 has
+no declared icon property.
+
 MeshZork runs the story through Dumb Frotz (`dfrotz`), which is installed
 separately from the Raspberry Pi OS package repositories and is licensed under
 GPL-2.0-or-later. MeshZork does not bundle or modify the Frotz executable.

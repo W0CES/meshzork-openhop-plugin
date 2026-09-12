@@ -2,6 +2,13 @@
 
 Created for and credited to **MacKayz117**.
 
+![MeshZork logo](meshzork_plugin/assets/meshzork-openhop.png)
+
+The same artwork is packaged with the wheel for future openHop catalogue/UI
+icon support. The current openHop manifest schema does not define an icon field,
+so local plugin cards may continue to show the generic placeholder; GitHub will
+display the logo here.
+
 MeshZork lets players run the complete historical Zork I game by direct-messaging
 a dedicated MeshCore Companion identity on an openHop Repeater. Each sender gets
 an independent SQLite-backed game session. Long descriptions are divided into

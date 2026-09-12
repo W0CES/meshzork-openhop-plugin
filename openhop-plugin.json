@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "openhop.meshzork",
   "name": "MeshZork",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Play the MIT-licensed historical Zork I release through MeshCore direct messages.",
   "runtime": {
     "type": "python",
