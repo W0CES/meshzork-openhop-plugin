@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openhop-meshzork-plugin"
-version = "0.2.3"
+version = "0.2.4"
 description = "Native openHop service plugin for playing Zork I over MeshCore direct messages"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -38,6 +38,12 @@ meshzork_plugin = ["assets/zork1.z3", "assets/meshzork-openhop.png"]
 
 [tool.setuptools.data-files]
 "share/openhop/plugins/openhop.meshzork" = ["openhop-plugin.json", "config.default.json"]
+"share/openhop/plugins/openhop.meshzork/ui" = [
+  "ui/index.html",
+  "ui/app.js",
+  "ui/styles.css",
+  "ui/meshzork-openhop.png"
+]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

@@ -30,6 +30,8 @@ product. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - suppresses the repetitive score/move status bar to save airtime (`SCORE` still works);
 - permits three active players, releasing a slot after 15 minutes of inactivity;
 - removes saved games after 30 days without activity so storage stays bounded;
+- provides a dashboard settings page for player capacity, inactivity timeout,
+  and save retention;
 - reconnects automatically if the Companion server is temporarily unavailable;
 - runs as a child of `openhop-plugin-manager`, outside the repeater process.
 
@@ -63,7 +65,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.3-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.4-py3-none-any.whl`.
 
 ## Raspberry Pi installation
 
@@ -143,7 +145,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.3-py3-none-any.whl
+openhop_meshzork_plugin-0.2.4-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -170,12 +172,17 @@ The manager installs it disabled. Open the MeshZork plugin settings and confirm:
 
 Save, then enable MeshZork. Enabling starts its service process.
 
+After installation, select **Open** on the MeshZork plugin card to change the
+maximum active players, the inactivity timeout that releases a player slot, and
+the number of days inactive saves are retained. Saving restarts only MeshZork;
+the repeater and other plugins continue running.
+
 The same operation can be performed through openHop's authenticated REST API if
 you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.3-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.4-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>MeshZork settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="meshzork-openhop.png" alt="MeshZork logo">
+        <div>
+          <div class="eyebrow">openHop plugin</div>
+          <h1>MeshZork</h1>
+        </div>
+        <span class="version">v0.2.4</span>
+      </div>
+      <span id="global-status" class="status-pill neutral">
+        <span class="status-dot"></span>Loading
+      </span>
+    </header>
+
+    <main>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+      <section class="card hero">
+        <img class="hero-logo" src="meshzork-openhop.png" alt="">
+        <div>
+          <div class="eyebrow">Game traffic controls</div>
+          <h2>Keep adventures moving without crowding the mesh</h2>
+          <p class="muted">Control how many players may be active, when idle players release
+            their slots, and how long inactive saved games remain on the Raspberry Pi.</p>
+        </div>
+        <div class="quick-facts" aria-label="Current MeshZork limits">
+          <div><span>Active players</span><strong id="overview-players">3</strong></div>
+          <div><span>Slot timeout</span><strong id="overview-timeout">15 minutes</strong></div>
+          <div><span>Save retention</span><strong id="overview-retention">30 days</strong></div>
+        </div>
+      </section>
+
+      <form id="settings-form">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">Capacity</span>
+            <h2>Settings</h2>
+            <p class="muted">Changes are saved through openHop and restart only MeshZork.</p>
+          </div>
+          <div class="settings-actions">
+            <button id="reload-settings" class="button ghost" type="button">Reload</button>
+            <button id="save-settings" class="button primary" type="submit">Save and restart</button>
+          </div>
+        </div>
+
+        <section class="card settings-section">
+          <div class="form-grid three">
+            <label>Maximum active players
+              <input id="max_active_players" type="number" min="1" max="20" step="1" required>
+              <small>Players beyond this limit receive a brief busy response.</small>
+            </label>
+            <label>Inactivity timeout (minutes)
+              <input id="active_player_timeout_minutes" type="number" min="1" max="1440" step="1" required>
+              <small>An idle player releases their active slot but keeps their save.</small>
+            </label>
+            <label>Keep inactive saves (days)
+              <input id="save_retention_days" type="number" min="1" max="3650" step="1" required>
+              <small>Older saved games are permanently removed when MeshZork next handles a command.</small>
+            </label>
+          </div>
+        </section>
+      </form>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

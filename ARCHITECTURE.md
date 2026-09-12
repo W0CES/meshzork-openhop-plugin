@@ -60,9 +60,13 @@ The wheel must contain `openhop-plugin.json`. openHop prefers it under
 - unknown keys are not represented by the parsed manifest, so they should not
   be used as an implied API or permission system.
 
-MeshZork declares a Python runtime only. Its wheel data-files place both the
-manifest and `config.default.json` at
-`share/openhop/plugins/openhop.meshzork/`.
+MeshZork declares a Python runtime and a static application UI. Its wheel
+data-files place the manifest and `config.default.json` at
+`share/openhop/plugins/openhop.meshzork/`, with the settings application under
+the dedicated `ui/` subtree. The UI reads and replaces the authenticated plugin
+settings object, preserving non-editable MeshZork values, and requests a
+MeshZork-only restart after saving. It exposes player capacity, inactive-slot
+timeout, and save-retention controls without importing Repeater internals.
 
 ## Installation and storage
 
