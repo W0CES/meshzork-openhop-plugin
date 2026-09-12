@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install build and test dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Verify source
+        run: |
+          ruff check .
+          pytest
+      - name: Build wheel
+        run: python -m build --wheel
+      - name: Create catalogue metadata and checksum
+        run: |
+          python scripts/build_catalogue_entry.py \
+            --wheel "dist/openhop_meshzork_plugin-${GITHUB_REF_NAME#v}-py3-none-any.whl" \
+            --repository "$GITHUB_REPOSITORY" \
+            --revision "$GITHUB_SHA" \
+            --tag "$GITHUB_REF_NAME" \
+            --output dist/catalogue-entry.json
+          cp ui/meshzork-card.png dist/meshzork-card.png
+      - name: Publish immutable release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "MeshZork ${GITHUB_REF_NAME#v}" \
+            --generate-notes \
+            dist/openhop_meshzork_plugin-*.whl \
+            dist/openhop_meshzork_plugin-*.whl.sha256 \
+            dist/catalogue-entry.json \
+            dist/meshzork-card.png

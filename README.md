@@ -65,7 +65,34 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.4-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.5-py3-none-any.whl`.
+
+## Publish a catalogue-ready GitHub Release
+
+The GitHub release workflow builds and verifies the wheel, calculates its exact
+SHA-256, and publishes the wheel, checksum, catalogue metadata, and wide card
+artwork together. The repository and its release assets must be public before
+submission because openHop downloads them without GitHub credentials.
+
+Create a release by pushing a version tag that matches `pyproject.toml` and the
+plugin manifest:
+
+```bash
+git tag v0.2.5
+git push origin v0.2.5
+```
+
+After the workflow succeeds, release `v0.2.5` contains:
+
+- `openhop_meshzork_plugin-0.2.5-py3-none-any.whl` — the installable plugin;
+- `openhop_meshzork_plugin-0.2.5-py3-none-any.whl.sha256` — its digest;
+- `meshzork-card.png` — artwork sized for the openHop plugin card;
+- `catalogue-entry.json` — a complete schema-2 catalogue containing the exact
+  release URLs, commit revision, plugin metadata, and checksum.
+
+Send `catalogue-entry.json` and the release URL to the openHop catalogue
+maintainers. Publication does not approve the plugin automatically. Do not
+replace release files after approval; publish a new version for every update.
 
 ## Raspberry Pi installation
 
@@ -145,7 +172,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.4-py3-none-any.whl
+openhop_meshzork_plugin-0.2.5-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -182,7 +209,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.4-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.5-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \
