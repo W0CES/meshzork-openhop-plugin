@@ -177,6 +177,10 @@ in shared channels.
   a fixed random seed, making recovery independent of an in-memory process.
 - Duplicate safety: sender + radio timestamp + normalized-command digest is
   retained for a configurable TTL so a radio retry cannot move twice.
+- Capacity: at most three players are active at once. A slot is released after
+  15 minutes without a command, while its saved game remains resumable.
+- Retention: sessions unused for 30 days are removed during normal message
+  processing, bounding SQLite growth without affecting active games.
 - Airtime: long story output is stored as UTF-8-safe numbered pages of at most
   `max_reply_bytes` (145 by default). Up to four pages are sent automatically
   with an inter-packet delay; `NEXT` retrieves only unusually long remaining output.

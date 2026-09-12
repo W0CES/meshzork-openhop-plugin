@@ -23,6 +23,10 @@ class Settings:
     duplicate_ttl_seconds: int
     auto_page_limit: int
     page_delay_seconds: float
+    max_active_players: int
+    active_player_timeout_seconds: int
+    busy_notice_ttl_seconds: int
+    save_retention_days: int
     frotz_path: str
     story_path: Path | None
     random_seed: int
@@ -42,6 +46,12 @@ class Settings:
             duplicate_ttl_seconds=_get_int("DUPLICATE_TTL_SECONDS", 600, config),
             auto_page_limit=_get_int("AUTO_PAGE_LIMIT", 4, config),
             page_delay_seconds=_get_float("PAGE_DELAY_SECONDS", 2.0, config),
+            max_active_players=_get_int("MAX_ACTIVE_PLAYERS", 3, config),
+            active_player_timeout_seconds=_get_int(
+                "ACTIVE_PLAYER_TIMEOUT_SECONDS", 900, config
+            ),
+            busy_notice_ttl_seconds=_get_int("BUSY_NOTICE_TTL_SECONDS", 300, config),
+            save_retention_days=_get_int("SAVE_RETENTION_DAYS", 30, config),
             frotz_path=_get_str("FROTZ_PATH", "/usr/games/dfrotz", config),
             story_path=_get_optional_path("STORY_PATH", config),
             random_seed=_get_int("RANDOM_SEED", 117, config),
@@ -122,6 +132,14 @@ def _validate(settings: Settings) -> None:
         raise ConfigError("AUTO_PAGE_LIMIT must be between 1 and 10")
     if not 0.5 <= settings.page_delay_seconds <= 10:
         raise ConfigError("PAGE_DELAY_SECONDS must be between 0.5 and 10")
+    if not 1 <= settings.max_active_players <= 20:
+        raise ConfigError("MAX_ACTIVE_PLAYERS must be between 1 and 20")
+    if not 60 <= settings.active_player_timeout_seconds <= 86400:
+        raise ConfigError("ACTIVE_PLAYER_TIMEOUT_SECONDS must be between 60 and 86400")
+    if not 30 <= settings.busy_notice_ttl_seconds <= 3600:
+        raise ConfigError("BUSY_NOTICE_TTL_SECONDS must be between 30 and 3600")
+    if not 1 <= settings.save_retention_days <= 3650:
+        raise ConfigError("SAVE_RETENTION_DAYS must be between 1 and 3650")
     if not settings.frotz_path:
         raise ConfigError("FROTZ_PATH must not be empty")
     if not 1 <= settings.random_seed <= 32767:

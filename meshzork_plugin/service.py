@@ -121,6 +121,10 @@ async def _async_main() -> int:
         runner,
         max_reply_bytes=settings.max_reply_bytes,
         duplicate_ttl_seconds=settings.duplicate_ttl_seconds,
+        max_active_players=settings.max_active_players,
+        active_player_timeout_seconds=settings.active_player_timeout_seconds,
+        busy_notice_ttl_seconds=settings.busy_notice_ttl_seconds,
+        save_retention_seconds=settings.save_retention_days * 86400,
     )
     await MeshZorkService(settings, meshcore, game).run()
     return 0

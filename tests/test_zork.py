@@ -88,3 +88,41 @@ def test_pending_pages_can_be_reserved_and_requeued(tmp_path) -> None:
 
     game.requeue_pending_pages("alice", pages)
     assert game.handle("alice", "next", timestamp=2) == pages[0]
+
+
+def test_active_player_limit_expires_without_losing_saves(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("meshzork_plugin.zork.time.time", lambda: 1000)
+    runner = FakeRunner()
+    game = ZorkStore(
+        tmp_path / "sessions.sqlite3",
+        runner,
+        max_active_players=2,
+        active_player_timeout_seconds=900,
+        busy_notice_ttl_seconds=300,
+    )
+    game.handle("alice", "north", timestamp=1)
+    game.handle("bob", "south", timestamp=2)
+
+    assert game.handle("charlie", "look", timestamp=3).startswith("MeshZork is busy (2/2)")
+    assert game.handle("charlie", "look", timestamp=4) is None
+
+    monkeypatch.setattr("meshzork_plugin.zork.time.time", lambda: 2000)
+    assert game.handle("charlie", "look", timestamp=5).startswith("1/")
+    game.handle("alice", "look", timestamp=6)
+    assert runner.calls[-1][0] == ["north", "look"]
+
+
+def test_inactive_save_expires(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("meshzork_plugin.zork.time.time", lambda: 1000)
+    runner = FakeRunner()
+    game = ZorkStore(
+        tmp_path / "sessions.sqlite3",
+        runner,
+        save_retention_seconds=30 * 86400,
+    )
+    game.handle("alice", "north", timestamp=1)
+
+    monkeypatch.setattr("meshzork_plugin.zork.time.time", lambda: 1000 + 31 * 86400)
+    game.handle("alice", "look", timestamp=2)
+
+    assert runner.calls[-1][0] == ["look"]

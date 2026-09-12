@@ -26,6 +26,8 @@ product. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - divides long output into numbered UTF-8 responses of at most 145 bytes and
   automatically sends up to four pages with a radio-friendly pause;
 - suppresses the repetitive score/move status bar to save airtime (`SCORE` still works);
+- permits three active players, releasing a slot after 15 minutes of inactivity;
+- removes saved games after 30 days without activity so storage stays bounded;
 - reconnects automatically if the Companion server is temporarily unavailable;
 - runs as a child of `openhop-plugin-manager`, outside the repeater process.
 
@@ -59,7 +61,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.1-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.2-py3-none-any.whl`.
 
 ## Raspberry Pi installation
 
@@ -139,7 +141,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.1-py3-none-any.whl
+openhop_meshzork_plugin-0.2.2-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -153,6 +155,10 @@ The manager installs it disabled. Open the MeshZork plugin settings and confirm:
   "duplicate_ttl_seconds": 600,
   "auto_page_limit": 4,
   "page_delay_seconds": 2.0,
+  "max_active_players": 3,
+  "active_player_timeout_seconds": 900,
+  "busy_notice_ttl_seconds": 300,
+  "save_retention_days": 30,
   "frotz_path": "/usr/games/dfrotz",
   "story_path": "",
   "random_seed": 117,
@@ -167,7 +173,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.1-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.2-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \

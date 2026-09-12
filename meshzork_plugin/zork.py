@@ -114,12 +114,20 @@ class ZorkStore:
         max_reply_bytes: int = 145,
         duplicate_ttl_seconds: int = 600,
         max_history_commands: int = 2500,
+        max_active_players: int = 3,
+        active_player_timeout_seconds: int = 900,
+        busy_notice_ttl_seconds: int = 300,
+        save_retention_seconds: int = 30 * 86400,
     ) -> None:
         self.database_path = Path(database_path)
         self.runner = runner
         self.max_reply_bytes = max_reply_bytes
         self.duplicate_ttl_seconds = duplicate_ttl_seconds
         self.max_history_commands = max_history_commands
+        self.max_active_players = max_active_players
+        self.active_player_timeout_seconds = active_player_timeout_seconds
+        self.busy_notice_ttl_seconds = busy_notice_ttl_seconds
+        self.save_retention_seconds = save_retention_seconds
         self._lock = threading.Lock()
         self._initialize()
 
@@ -144,6 +152,10 @@ class ZorkStore:
                     dedupe_key TEXT PRIMARY KEY,
                     processed_at INTEGER NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS busy_notices (
+                    sender_id TEXT PRIMARY KEY,
+                    sent_at INTEGER NOT NULL
+                );
                 """
             )
 
@@ -160,6 +172,16 @@ class ZorkStore:
                 "DELETE FROM processed_messages WHERE processed_at < ?",
                 (now - self.duplicate_ttl_seconds,),
             )
+            connection.execute(
+                "DELETE FROM zork_sessions WHERE updated_at < ?",
+                (now - self.save_retention_seconds,),
+            )
+            connection.execute(
+                "DELETE FROM busy_notices WHERE sent_at < ?",
+                (now - self.save_retention_seconds,),
+            )
+            if not self._claim_active_slot(connection, sender_id, now):
+                return self._busy_notice(connection, sender_id, now)
             try:
                 connection.execute(
                     "INSERT INTO processed_messages(dedupe_key, processed_at) VALUES (?, ?)",
@@ -169,6 +191,11 @@ class ZorkStore:
                 return None
 
             history, pending = self._load_session(connection, sender_id, now)
+            connection.execute(
+                "UPDATE zork_sessions SET updated_at=? WHERE sender_id=?",
+                (now, sender_id),
+            )
+            connection.execute("DELETE FROM busy_notices WHERE sender_id=?", (sender_id,))
             if lower in {"next", "more"}:
                 return self._next_page(connection, sender_id, history, pending, now)
             if lower in {"help", "?"}:
@@ -197,6 +224,41 @@ class ZorkStore:
             except ZorkEngineError:
                 return "The Zork engine had a problem. Your previous turn is still saved; try again."
             return self._save_response(connection, sender_id, candidate, output, now)
+
+    def _claim_active_slot(
+        self, connection: sqlite3.Connection, sender_id: str, now: int
+    ) -> bool:
+        cutoff = now - self.active_player_timeout_seconds
+        row = connection.execute(
+            "SELECT updated_at FROM zork_sessions WHERE sender_id=?",
+            (sender_id,),
+        ).fetchone()
+        if row is not None and int(row["updated_at"]) >= cutoff:
+            return True
+        active_count = connection.execute(
+            "SELECT COUNT(*) FROM zork_sessions WHERE updated_at>=?",
+            (cutoff,),
+        ).fetchone()[0]
+        return int(active_count) < self.max_active_players
+
+    def _busy_notice(
+        self, connection: sqlite3.Connection, sender_id: str, now: int
+    ) -> str | None:
+        row = connection.execute(
+            "SELECT sent_at FROM busy_notices WHERE sender_id=?",
+            (sender_id,),
+        ).fetchone()
+        if row is not None and int(row["sent_at"]) >= now - self.busy_notice_ttl_seconds:
+            return None
+        connection.execute(
+            "INSERT INTO busy_notices(sender_id, sent_at) VALUES (?, ?) "
+            "ON CONFLICT(sender_id) DO UPDATE SET sent_at=excluded.sent_at",
+            (sender_id, now),
+        )
+        return (
+            f"MeshZork is busy ({self.max_active_players}/{self.max_active_players}). "
+            "Try again later; your saved game is safe."
+        )
 
     def _load_session(
         self, connection: sqlite3.Connection, sender_id: str, now: int
