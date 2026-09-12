@@ -4,11 +4,6 @@ Created for and credited to **MacKayz117**.
 
 ![MeshZork logo](meshzork_plugin/assets/meshzork-openhop.png)
 
-The same artwork is packaged with the wheel for future openHop catalogue/UI
-icon support. The current openHop manifest schema does not define an icon field,
-so local plugin cards may continue to show the generic placeholder; GitHub will
-display the logo here.
-
 MeshZork lets players run the complete historical Zork I game by direct-messaging
 a dedicated MeshCore Companion identity on an openHop Repeater. Each sender gets
 an independent SQLite-backed game session. Long descriptions are divided into
@@ -68,7 +63,7 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.2.2-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.2.3-py3-none-any.whl`.
 
 ## Raspberry Pi installation
 
@@ -148,7 +143,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.2.2-py3-none-any.whl
+openhop_meshzork_plugin-0.2.3-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -180,7 +175,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.2.2-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.2.3-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \
