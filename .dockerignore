@@ -1,0 +1,11 @@
+.git
+.github
+.build-venv
+.smoke-venv
+.pytest_cache
+.test-tmp-*
+__pycache__
+*.py[cod]
+*.egg-info
+build
+dist

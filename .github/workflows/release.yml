@@ -1,48 +1,98 @@
-name: Release
+name: Publish Release Wheel
+run-name: Prepare MeshZork ${{ inputs.release_tag || github.ref_name }}
 
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing vMAJOR.MINOR.PATCH tag to build and stage
+        required: true
+        type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: meshzork-release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+      - name: Verify release version
+        run: python scripts/check_release_version.py --tag "$RELEASE_TAG"
       - name: Install build and test dependencies
         run: python -m pip install -e ".[dev]"
-      - name: Verify source
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest
+      - name: Run Docker installation and smoke test
+        run: docker build --file tests/Dockerfile.smoke --tag meshzork-release-smoke .
+      - name: Build release assets
         run: |
-          ruff check .
-          pytest
-      - name: Build wheel
-        run: python -m build --wheel
-      - name: Create catalogue metadata and checksum
-        run: |
+          python -m build --wheel
+          SOURCE_REVISION="$(git rev-parse HEAD)"
           python scripts/build_catalogue_entry.py \
-            --wheel "dist/openhop_meshzork_plugin-${GITHUB_REF_NAME#v}-py3-none-any.whl" \
+            --wheel "dist/openhop_meshzork_plugin-${RELEASE_TAG#v}-py3-none-any.whl" \
             --repository "$GITHUB_REPOSITORY" \
-            --revision "$GITHUB_SHA" \
-            --tag "$GITHUB_REF_NAME" \
+            --revision "$SOURCE_REVISION" \
+            --tag "$RELEASE_TAG" \
             --output dist/catalogue-entry.json
           cp ui/meshzork-card.png dist/meshzork-card.png
-      - name: Publish immutable release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --verify-tag \
-            --title "MeshZork ${GITHUB_REF_NAME#v}" \
-            --generate-notes \
-            dist/openhop_meshzork_plugin-*.whl \
-            dist/openhop_meshzork_plugin-*.whl.sha256 \
-            dist/catalogue-entry.json \
+          python -c 'import os, zipfile; from pathlib import Path; tag=os.environ["RELEASE_TAG"]; wheel=next(Path("dist").glob("*.whl")); archive=Path("dist") / f"meshzork-{tag}-wheel.zip"; z=zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED); z.write(wheel, wheel.name); z.close()'
+      - name: Upload tested release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: meshzork-release-assets
+          path: |
+            dist/*.whl
+            dist/*.zip
+            dist/*.whl.sha256
+            dist/catalogue-entry.json
             dist/meshzork-card.png
+          if-no-files-found: error
+          retention-days: 7
+
+  stage-release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+    steps:
+      - name: Download tested release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: meshzork-release-assets
+          path: release-assets
+      - name: Create or refresh the draft GitHub Release
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --draft \
+              --verify-tag \
+              --generate-notes \
+              --title "MeshZork ${RELEASE_TAG#v}"

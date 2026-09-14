@@ -49,7 +49,7 @@ interactive `SAVE` and `RESTORE` prompts are replaced with a short explanation.
 - internet access during first installation so the isolated plugin environment
   can install its pinned Python dependencies.
 
-No system Z-machine package is required. MeshZork 0.3.0 uses the MIT-licensed,
+No system Z-machine package is required. MeshZork 0.3.0 and newer use the MIT-licensed,
 pure-Python `yazm-py==0.2.0` interpreter, so the same platform-independent wheel
 works in the published openHop Docker image and on current native Pi installs.
 Every push also builds the wheel in a clean Python 3.12 slim container and runs
@@ -70,34 +70,54 @@ python -m pip install --upgrade build
 python -m build --wheel
 ```
 
-The result is `dist/openhop_meshzork_plugin-0.3.0-py3-none-any.whl`.
+The result is `dist/openhop_meshzork_plugin-0.3.1-py3-none-any.whl`.
 
-## Publish a catalogue-ready GitHub Release
+## Releases and openHop catalogue updates
 
-The GitHub release workflow builds and verifies the wheel, calculates its exact
-SHA-256, and publishes the wheel, checksum, catalogue metadata, and wide card
-artwork together. The repository and its release assets must be public before
-submission because openHop downloads them without GitHub credentials.
-
-Create a release by pushing a version tag that matches `pyproject.toml` and the
-plugin manifest:
+MeshZork publishes installable wheels as GitHub Release assets. Before creating
+a release, update the version in `pyproject.toml`, `openhop-plugin.json`, and
+`meshzork_plugin/__init__.py`, then commit and push those changes. Create and
+push an exact `vMAJOR.MINOR.PATCH` tag that matches all three declarations:
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.3.1
+git push origin v0.3.1
 ```
 
-After the workflow succeeds, release `v0.3.0` contains:
+The **Publish Release Wheel** workflow checks out that tag, rejects noncanonical
+or mismatched versions, runs Ruff, pytest, and the Docker installation/smoke
+test, then builds and stages a draft GitHub Release. The workflow can also be
+rerun for an existing tag from GitHub's Actions page by supplying the tag in the
+manual-run form. Review the draft and publish it only after all checks pass.
 
-- `openhop_meshzork_plugin-0.3.0-py3-none-any.whl` — the installable plugin;
-- `openhop_meshzork_plugin-0.3.0-py3-none-any.whl.sha256` — its digest;
+Release `v0.3.1` contains:
+
+- `openhop_meshzork_plugin-0.3.1-py3-none-any.whl` — the installable plugin;
+- `meshzork-v0.3.1-wheel.zip` — a ZIP containing that wheel;
+- `openhop_meshzork_plugin-0.3.1-py3-none-any.whl.sha256` — its digest;
 - `meshzork-card.png` — artwork sized for the openHop plugin card;
-- `catalogue-entry.json` — a complete schema-2 catalogue containing the exact
-  release URLs, commit revision, plugin metadata, and checksum.
+- `catalogue-entry.json` — schema-2 metadata with the release URL, source
+  revision, plugin identity, version, and wheel checksum.
 
-Send `catalogue-entry.json` and the release URL to the openHop catalogue
-maintainers. Publication does not approve the plugin automatically. Do not
-replace release files after approval; publish a new version for every update.
+Download the wheel or ZIP from the repository's
+[Releases page](https://github.com/W0CES/meshzork-openhop-plugin/releases).
+
+openHop owns update checking; MeshZork does not contain a custom updater. Once
+MeshZork is approved in the openHop catalogue and installed from that catalogue,
+openHop compares the installed version with the catalogue's approved version and
+offers an update in the Plugins page. An installation made from a local wheel is
+not automatically eligible for catalogue updates.
+
+Publishing a GitHub Release does **not** add or update MeshZork in openHop. The
+official catalogue entry must be separately approved or updated with the new
+release wheel URL and SHA-256 checksum. Do not replace approved release files;
+publish a new version instead.
+
+During a catalogue update, openHop installs a new release directory while
+retaining MeshZork's stable `openhop.meshzork` data directory. Existing
+`config.json` settings and `sessions.sqlite3` saves therefore remain in place;
+the manager also preserves the enabled flag and restarts the service when it was
+enabled. Back up the data directory before any production upgrade.
 
 ## Native Raspberry Pi and Docker installation
 
@@ -176,7 +196,7 @@ Copy the wheel to the Pi, sign in to the openHop dashboard, open **Plugins**, an
 use the local wheel upload. Select:
 
 ```text
-openhop_meshzork_plugin-0.3.0-py3-none-any.whl
+openhop_meshzork_plugin-0.3.1-py3-none-any.whl
 ```
 
 The manager installs it disabled. Open the MeshZork plugin settings and confirm:
@@ -212,7 +232,7 @@ you already have an API bearer token:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -F "wheel=@openhop_meshzork_plugin-0.3.0-py3-none-any.whl" \
+  -F "wheel=@openhop_meshzork_plugin-0.3.1-py3-none-any.whl" \
   http://127.0.0.1:8000/api/plugins/install
 
 curl -X POST -H "Authorization: Bearer $TOKEN" \
